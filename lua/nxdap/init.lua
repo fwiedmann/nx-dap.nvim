@@ -2,7 +2,17 @@
 local options = {
   -- TODO maybe get this also via ENV
   projectsSourceFile = "angular.json",
-  projectsSourceFileDirectory = vim.fn.getcwd()
+  projectsSourceFileDirectory = vim.fn.getcwd(),
+
+  dap = {
+    configuation = {
+      type = "pwa-node",
+      request = "launch",
+      name = "Deug NX test",
+      program = "${workspaceFolder}/node_modules/@angular/cli/bin/ng",
+      cwd = "${workspaceFolder}",
+    }
+  }
 }
 
 local function readProjects()
@@ -29,6 +39,25 @@ local function findProjectName()
   error("npx-dap: could not find any matching nx project for current buffer")
 end
 
+local function buildArgs()
+  return {
+    args = function()
+      return {
+        "test",
+        findProjectName(),
+        "--codeCoverage=false",
+        "--testFile=" .. vim.fn.expand("%:.")
+      }
+    end
+  }
+end
+
+local function buildDapConfig()
+  local config = vim.tbl_deep_extend("force", options.dap.configuation, buildArgs())
+  return config
+end
+
 return {
-  test = findProjectName
+  test = findProjectName,
+  setup = buildDapConfig
 }
