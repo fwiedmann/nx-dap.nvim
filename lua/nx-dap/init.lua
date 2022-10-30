@@ -1,6 +1,5 @@
 -- pass options via setup function
 local options = {
-  -- TODO maybe get this also via ENV
   projectsSourceFile = "angular.json",
   projectsSourceFileDirectory = vim.fn.getcwd(),
 
@@ -39,6 +38,16 @@ local function findProjectName()
   error("npx-dap: could not find any matching nx project for current buffer")
 end
 
+local function buildTestNameArg()
+  testName = require("nx-dap.finder").findNearestTestName()
+  if not testName or testName == "" then
+    return ""
+  end
+
+  return "--testNamePattern=" .. '"' .. testName .. '"'
+
+end
+
 local function buildArgs()
   return {
     args = function()
@@ -46,7 +55,10 @@ local function buildArgs()
         "test",
         findProjectName(),
         "--codeCoverage=false",
-        "--testFile=" .. vim.fn.expand("%:.")
+        "--onlyChanged=false",
+        "--skip-nx-cache",
+        "--testFile=" .. vim.fn.expand("%:."),
+        buildTestNameArg()
       }
     end
   }
@@ -57,7 +69,13 @@ local function buildDapConfig()
   return config
 end
 
+local function setup(o)
+  if o then
+    options = vim.tbl_deep_extend("force", options, o)
+  end
+  return buildDapConfig()
+end
+
 return {
-  test = findProjectName,
-  setup = buildDapConfig
+  setup = setup
 }
